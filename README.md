@@ -25,6 +25,12 @@ Es wurde eine Schaltung realisiert, welche Flip Flop genannt wird. Diese Schaltu
 
 Die notwendige Theorie, um das Projekt durchführen zu können, wird hier beschrieben. Diese kann auch ausführlicher sein. Hier sollen auch die Fragestellungen ausgearbeitet werden.
 
+### Bauteile (Kurzbeschreibung)
+
+**RGB-LED:** Eine RGB-LED vereint rote, grüne und blaue LEDs in einem Gehäuse. Durch das separate Ansteuern der drei Kanäle (z. B. per PWM) lassen sich verschiedene Farben mischen, wodurch sie sich gut als Status- oder Zustandsanzeige eignet.
+
+**DST-015 (Distanzsensor):** Der DST-015 misst die Entfernung zu einem Objekt und gibt ein entsprechendes Signal aus. Damit lässt sich erkennen, ob sich ein Hindernis im Messbereich befindet und ob Messungen durch nahe Objekte beeinflusst werden könnten.
+
 ## 4. Arbeitsschritt
 
 Die einzelnen Schritte sollen hier genauer beschrieben werden. Mithilfe dieser Dokumentation sollte jeder das Projekt mit demselben Ergebnis nachmachen können. Weitere Arbeitsschritte können hinzugefügt werden.
