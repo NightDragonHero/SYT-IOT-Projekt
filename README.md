@@ -2,17 +2,16 @@
 
 ## Eventuell Untertitel
 
-Verfasser: **Dominik Höbert, MSc**
+Verfasser: **Niklas Prager, Andjela Zlatkovic**
 
-Datum: **05.08.2022**
+Datum: **16.05.2026**
 
 ## 1. Einführung
 
-Hier wird in einem Absatz eine kurze (zwei bis drei Sätze) Einführung zum Thema geschrieben. Zum Beispiel kann hier stehen, warum dieses Thema gewählt wurde und warum es wichtig ist. Grundsätzlich ist eine Dokumentation im Passiv zu verfassen. Es ist nicht wichtig, wer etwas getan hat, sondern was getan wurde.
+Im Bereich des Internets der Dinge (IOT) werden zunehmend Mikrocontroller eingesetzt, um Sensordaten zu erfassen und drahtlos zu übertragen. Eine effiziente und energiearme Kommunikationsmethode stellt dabei ESP-NOW dar, welches eine direkte Kommunikation zwischen ESP-Geräten ohne klassisches WLAN ermöglicht.
 
-Z. B.:
+In diesem Projekt wird ein System entwickelt, das als eine kleine Wetterstation dienen soll und die Temperratur, Luftdruck, Tag/Nacht und die Distanz zu einem möglichen Objekt misst die die Messungen beeinträchtigen könnte. Die gemessenen Daten werden, dann an den zweiten ESP weitergeleitet und auf versschiedenen weisen ausgegeben. 
 
-Es gibt unterschiedliche Methoden, um Daten zu speichern, zum Beispiel in Dateien auf einer Festplatte oder in einem Cloudstorage. Für Webanwendungen oder maschinelle Weiterverarbeitung eignet sich dies eher schlecht, dafür werden zumeist Datenbanken verwendet. In Informationssysteme der 3. Klasse wird sich vor allem mit den relationalen Datenbanken beschäftigt.
 
 ## 2. Projektbeschreibung
 
