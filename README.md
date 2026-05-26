@@ -1,6 +1,6 @@
-# Projekttitel
+# ITP Projekt IoT und ESP-NOW
 
-## Eventuell Untertitel
+## Wetterstation
 
 Verfasser: **Niklas Prager, Andjela Zlatkovic**
 
@@ -10,20 +10,37 @@ Datum: **16.05.2026**
 
 Im Bereich des Internets der Dinge (IOT) werden zunehmend Mikrocontroller eingesetzt, um Sensordaten zu erfassen und drahtlos zu übertragen. Eine effiziente und energiearme Kommunikationsmethode stellt dabei ESP-NOW dar, welches eine direkte Kommunikation zwischen ESP-Geräten ohne klassisches WLAN ermöglicht.
 
-In diesem Projekt wird ein System entwickelt, das als eine kleine Wetterstation dienen soll und die Temperratur, Luftdruck, Tag/Nacht und die Distanz zu einem möglichen Objekt misst die die Messungen beeinträchtigen könnte. Die gemessenen Daten werden, dann an den zweiten ESP weitergeleitet und auf versschiedenen weisen ausgegeben. 
+In diesem Projekt wird ein System entwickelt, das als eine kleine Wetterstation dienen soll. 
 
 
 ## 2. Projektbeschreibung
 
-Hier wird das Projekt und die Ergebnisse kurz (zwei bis drei Sätze) beschrieben.
+Im Rahmen dieses Projekts wurde eine IoT-basierte Wetterstation realisiert. Ein ESP32 misst mithilfe eines Temperratur-Luftdruck-Sensors, eines  Ultraschallsensors, und eines Heligkeitssensor Daten und gibt diese an den zweiten ESP32 weiter. Dieser zeigt diese Messdaten lokal auf einem OLED-Display, sowie über visuelle und akustische Signale an. Schlussendlich werden die Messdaten noch auf einer Website dargestellt.
 
-Z. B.:
 
-Es wurde eine Schaltung realisiert, welche Flip Flop genannt wird. Diese Schaltung hat die Aufgabe, einen Zustand zu speichern. Die Schaltung wurde in Tinkercad simuliert und die Zustände überprüft und dokumentiert.
 
 ## 3. Theorie
 
-Die notwendige Theorie, um das Projekt durchführen zu können, wird hier beschrieben. Diese kann auch ausführlicher sein. Hier sollen auch die Fragestellungen ausgearbeitet werden.
+Das Internet der Dinge (IoT) beschreibt die Vernetzung von Geräten, die über Sensoren verfügen und Daten erfassen, verarbeiten und austauschen können. Mikrocontroller wie der ESP32 spielen dabei eine zentrale Rolle, da sie kostengünstig, energieeffizient und vielseitig einsetzbar sind.
+
+ESP-NOW ist ein Kommunikationsprotokoll, das von Espressif entwickelt wurde. Es ermöglicht die direkte drahtlose Kommunikation zwischen mehreren ESP-Geräten ohne die Notwendigkeit eines WLAN-Routers. Dadurch werden geringe Latenzzeiten und ein niedriger Energieverbrauch erreicht.
+
+Zur Abstandsmessung wird ein Ultraschallsensor verwendet. Dieser sendet Schallwellen aus und misst die Zeit, bis das Echo zurückkommt. Anhand dieser Zeit kann die Entfernung zum Objekt berechnet werden (in cm hier)
+
+Zusätzlich werden Ausgabekomponenten wie ein OLED-Display, eine RGB-LED sowie ein akustischer Signalgeber verwendet, um die gemessenen Daten für den Benutzer verständlich darzustellen
+
+RGB-LED 
+HC-SR04 (Ultraschallsensor)
+Relais B02
+TMB12A05 (Buzzer)
+2x ESP 32
+DST-015 (Bildschirm)
+
+
+BMP280:
+Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
+
+
 
 ## 4. Arbeitsschritt
 
