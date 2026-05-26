@@ -31,9 +31,191 @@ Die notwendige Theorie, um das Projekt durchführen zu können, wird hier beschr
 
 **DST-015 (Distanzsensor):** Der DST-015 misst die Entfernung zu einem Objekt und gibt ein entsprechendes Signal aus. Damit lässt sich erkennen, ob sich ein Hindernis im Messbereich befindet und ob Messungen durch nahe Objekte beeinflusst werden könnten.
 
-## 4. Arbeitsschritt
+## 4. Arbeitsschritte (Anleitung zur Durchführung)
 
-Die einzelnen Schritte sollen hier genauer beschrieben werden. Mithilfe dieser Dokumentation sollte jeder das Projekt mit demselben Ergebnis nachmachen können. Weitere Arbeitsschritte können hinzugefügt werden.
+Im Folgenden werden die Arbeitsschritte beschrieben, um das Projekt (IoT‑Wetterstation mit ESP‑NOW, Anzeige, Weboberfläche und Aktoren) nachzubauen. Das System besteht aus **zwei ESP32**:
+
+- **ESP32 #1 (Sender / Sensor-Node):** misst Temperatur + Luftdruck (BMP280), Distanz (HY‑SRF05) und Tag/Nacht (Lichtsensor) und sendet die Werte per **ESP‑NOW**.
+- **ESP32 #2 (Empfänger / Anzeige-Node):** empfängt die Daten, zeigt sie auf einem **OLED** an, erstellt einen **Access Point mit Webserver** und steuert **LEDs** + **Relais**.
+
+---
+
+### 4.1 Benötigte Komponenten
+
+**Hardware:**
+- 2× ESP32
+- BMP280 (I2C) – Temperatur/Luftdruck
+- HY‑SRF05 (Ultraschall‑Distanzsensor)
+- Lichtsensor-Modul mit Digitalausgang (DO)
+- Buzzer
+- OLED SSD1306 (I2C, 128×64)
+- 3× LEDs (oder RGB-LED-Kanäle) an GPIO 16/17/18 (Empfänger)
+- Relaismodul an GPIO 23 (Empfänger)
+- Jumper-Kabel, Breadboard, ggf. Widerstände (für LEDs)
+
+**Software / Libraries (Arduino IDE):**
+- ESP32 Board Support (Arduino IDE Boardverwalter)
+- `Adafruit_BMP280`, `Adafruit_Sensor`
+- `Adafruit_GFX`, `Adafruit_SSD1306`
+- (optional) `Arduino_JSON`
+- `WiFi.h` und `esp_now.h` sind im ESP32 Core enthalten
+
+---
+
+### 4.2 Vorbereitung in der Arduino IDE
+
+1. **ESP32 Boardpaket installieren**  
+   Arduino IDE → *Werkzeuge* → *Board* → *Boardverwalter* → „ESP32 by Espressif Systems“.
+
+2. **Bibliotheken installieren**  
+   Arduino IDE → *Sketch* → *Bibliothek einbinden* → *Bibliotheken verwalten* → die genannten Libraries installieren.
+
+3. **Zwei Sketches anlegen**  
+   - Sketch 1: **Sender (Sensor-Node)**
+   - Sketch 2: **Empfänger (Anzeige/Webserver-Node)**
+
+---
+
+### 4.3 Verdrahtung – ESP32 #1 (Sensor-Node / Sender)
+
+#### (A) BMP280 (I2C)
+Im Code wird ein eigener I2C-Bus verwendet:
+- SDA → **GPIO 21**
+- SCL → **GPIO 22**
+- VCC → 3.3V
+- GND → GND
+
+> Hinweis: Im Sender-Code wird `bmp.begin(0x76)` genutzt. Manche BMP280-Module verwenden `0x77`. Falls der Sensor nicht gefunden wird, muss die Adresse angepasst werden.
+
+#### (B) HY‑SRF05 (Ultraschall)
+- TRIG → **GPIO 5**
+- ECHO → **GPIO 18**
+- VCC → (je nach Modul) 5V
+- GND → GND
+
+> Hinweis: Der ECHO-Pin kann bei manchen Modulen 5V ausgeben. Um den ESP32 zu schützen, kann ein Spannungsteiler sinnvoll sein.
+
+#### (C) Lichtsensor (DO)
+- DO → **GPIO 26**
+- VCC → 3.3V/5V (je nach Modul)
+- GND → GND
+
+Im Code gilt: **LOW = dunkel**, daher:
+- `istNacht = (digitalRead(LICHTSENSOR_PIN) == LOW);`
+
+#### (D) Buzzer
+- Signal → **GPIO 27**
+- GND → GND
+
+---
+
+### 4.4 Inbetriebnahme – Sender testen
+
+1. Sender-Sketch auf **ESP32 #1** flashen.
+2. Seriellen Monitor öffnen (**115200 Baud**).
+3. Prüfen, ob alle 6 Sekunden Messwerte ausgegeben werden:
+   - Temperatur (°C)
+   - Druck (hPa)
+   - Distanz (cm) – bei Timeout `-1.0`
+   - Tag/Nacht
+
+**Fehlersuche:**
+- Ausgabe „BMP280 nicht gefunden!“ → I2C-Verdrahtung prüfen, Adresse 0x76/0x77 testen.
+
+**Buzzer-Logik:**
+- Wenn das ESP‑NOW Senden fehlschlägt, piept der Buzzer ca. **3× pro Sekunde**.
+
+---
+
+### 4.5 Verdrahtung – ESP32 #2 (Empfänger / Anzeige-Node)
+
+#### (A) OLED SSD1306 (I2C)
+Im Code:
+- `I2C_Display.begin(33, 19);`  
+  → SDA = **GPIO 33**, SCL = **GPIO 19**
+- Display-Adresse: **0x3C**
+
+Anschluss:
+- SDA → **GPIO 33**
+- SCL → **GPIO 19**
+- VCC → 3.3V
+- GND → GND
+
+#### (B) LEDs (Temperatur-Anzeige)
+Im Empfänger-Code werden drei Pins genutzt:
+- LED 1 → **GPIO 16**
+- LED 2 → **GPIO 17**
+- LED 3 → **GPIO 18**
+
+> Hinweis: Bitte LEDs mit geeignetem Vorwiderstand (z. B. 220–330 Ω) betreiben.
+
+#### (C) Relais
+- IN → **GPIO 23**
+- VCC/GND entsprechend Relaismodul
+
+---
+
+### 4.6 Inbetriebnahme – Empfänger (Anzeige/Webserver)
+
+1. Empfänger-Sketch auf **ESP32 #2** flashen.
+2. Der ESP32 startet als **Access Point**:
+   - SSID: `ESP32_Anzeige`
+   - Passwort: `12345678`
+3. Mit Handy/Laptop verbinden.
+4. Im Browser die Weboberfläche aufrufen (typisch):
+   - `http://192.168.4.1/`
+
+Auf dem OLED werden angezeigt:
+- Temperatur, Druck, Distanz
+- Lichtstatus (TAG/NACHT)
+- LED-Modus (AUTO/AUS)
+- Relais-System (AKTIV/AUS)
+
+---
+
+### 4.7 ESP‑NOW Datenübertragung prüfen
+
+1. Sender und Empfänger einschalten.
+2. Prüfen, ob am Empfänger Live-Daten ankommen (Display oder Webinterface).
+3. Falls keine Daten ankommen: MAC-Adresse prüfen.
+
+> Wichtig: Im Sender ist `broadcastAddress[]` fest vorgegeben. Diese Adresse muss zum Empfänger passen (oder korrekt als Broadcast genutzt werden).
+
+---
+
+### 4.8 Funktionslogik (Software)
+
+**Sendeintervall:** alle **6 Sekunden** werden neue Sensordaten vom Sender übertragen.
+
+**LED-Automatik (Empfänger, nur wenn `ledAutomatik == true`):**
+- Temperatur > 25°C → Pin 16 an (z. B. „warm“)
+- Temperatur < 15°C → Pin 17 an (z. B. „kalt“)
+- sonst → Pin 18 an (z. B. „normal“)
+
+**Relais-System (Empfänger, nur wenn `relaisSystemAktiv == true`):**
+- Objekt näher als 50 cm → schnelles Schalten (200 ms)
+- Objekt weiter weg → langsames Schalten (1000 ms)
+
+**Weboberfläche:**
+- Zeigt Live-Daten und Status an.
+- Buttons schalten:
+  - LED Automatik EIN / Alle LEDs AUS
+  - Relais-System EIN / AUS
+- Die Seite aktualisiert ca. alle 6 Sekunden über `/chart-data`.
+
+---
+
+### 4.9 Abschluss / Checkliste
+
+- [ ] BMP280 liefert plausible Werte
+- [ ] Distanzsensor liefert Werte (nicht dauerhaft `-1.0`)
+- [ ] Lichtsensor schaltet auf „NACHT“, wenn abgedeckt
+- [ ] Empfänger zeigt Werte auf OLED an
+- [ ] Webinterface erreichbar über AP (`ESP32_Anzeige`)
+- [ ] LED-Automatik reagiert auf Temperaturbereiche
+- [ ] Relais reagiert auf Distanz und lässt sich per Web deaktivieren
+- [ ] Buzzer piept nur bei ESP‑NOW Sendefehlern
+````](#)
 
 ### Code
 
