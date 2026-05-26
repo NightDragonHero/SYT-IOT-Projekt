@@ -42,12 +42,33 @@ Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +8
 
 ### Bauteile (Kurzbeschreibung)
 
-**RGB-LED:** Eine RGB-LED vereint rote, grüne und blaue LEDs in einem Gehäuse. Durch das separate Ansteuern der drei Kanäle (z. B. per PWM) lassen sich verschiedene Farben mischen, wodurch sie sich gut als Status- oder Zustandsanzeige eignet.
+## RGB‑LED
+Eine RGB‑LED vereint **rote, grüne und blaue Leuchtdioden** in einem Gehäuse. Durch PWM‑Ansteuerung der drei Kanäle lassen sich **beliebige Farben** erzeugen.
 
-**DST-015 (Distanzsensor):** Der DST-015 misst die Entfernung zu einem Objekt und gibt ein entsprechendes Signal aus. Damit lässt sich erkennen, ob sich ein Hindernis im Messbereich befindet und ob Messungen durch nahe Objekte beeinflusst werden könnten.
+---
 
-BMP280:**
-Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
+## HC‑SR04 (Ultraschallsensor)
+Der HC‑SR04 misst **Abstände von ca. 2–400 cm** mittels Ultraschall‑Echo. Er sendet einen 40‑kHz‑Impuls aus und berechnet aus der Echo‑Laufzeit die Entfernung.
+
+---
+
+## Relaismodul
+Ein Relaismodul ermöglicht das **Schalten von Lasten** über eine **galvanisch getrennte Steuerseite**. Es wird genutzt, um höhere Spannungen oder Ströme sicher mit Mikrocontrollern zu schalten.
+
+---
+
+## TMB12A05 (Buzzer)
+Der TMB12A05 ist ein **aktiver 12‑V‑Buzzer**, der beim Anlegen der Betriebsspannung einen **festen Ton** erzeugt. Er benötigt kein externes Signal und dient als akustischer Alarmgeber.
+
+---
+
+## ESP32 (2×)
+Der ESP32 ist ein **leistungsstarker Mikrocontroller** mit **WLAN/Bluetooth**, Dual‑Core‑CPU und vielen GPIO‑Pins. Er eignet sich für IoT‑Projekte, Sensorik und Echtzeit‑Anwendungen.
+
+---
+
+## DST‑015 (Display)
+Das DST‑015 ist ein **1,5‑Zoll‑TFT‑Display** mit **128×128 Pixeln**, das über SPI angesteuert wird. Es eignet sich zur Darstellung von Text, Icons und einfachen 
 
 ## 4. Arbeitsschritte (Anleitung zur Durchführung)
 
