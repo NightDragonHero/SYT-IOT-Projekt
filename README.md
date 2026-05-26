@@ -40,13 +40,14 @@ DST-015 (Bildschirm)
 BMP280:
 Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
 
-
-
 ### Bauteile (Kurzbeschreibung)
 
 **RGB-LED:** Eine RGB-LED vereint rote, grüne und blaue LEDs in einem Gehäuse. Durch das separate Ansteuern der drei Kanäle (z. B. per PWM) lassen sich verschiedene Farben mischen, wodurch sie sich gut als Status- oder Zustandsanzeige eignet.
 
 **DST-015 (Distanzsensor):** Der DST-015 misst die Entfernung zu einem Objekt und gibt ein entsprechendes Signal aus. Damit lässt sich erkennen, ob sich ein Hindernis im Messbereich befindet und ob Messungen durch nahe Objekte beeinflusst werden könnten.
+
+BMP280:**
+Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
 
 ## 4. Arbeitsschritte (Anleitung zur Durchführung)
 
@@ -232,7 +233,7 @@ Auf dem OLED werden angezeigt:
 - [ ] LED-Automatik reagiert auf Temperaturbereiche
 - [ ] Relais reagiert auf Distanz und lässt sich per Web deaktivieren
 - [ ] Buzzer piept nur bei ESP‑NOW Sendefehlern
-````](#)
+
 
 ### Code
 
