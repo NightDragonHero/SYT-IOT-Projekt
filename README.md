@@ -4,7 +4,7 @@
 
 Verfasser: **Niklas Prager, Andjela Zlatkovic**
 
-Datum: **16.05.2026**
+Datum: **27.05.2026**
 
 ## 1. Einführung
 
@@ -1173,18 +1173,18 @@ Der Empfänger stellt die Werte lokal auf einem OLED dar und bietet zusätzlich 
 
 ## 6. Quellen
 
-[1] Adam-P, “Markdown cheatsheet · Adam-P/markdown-here wiki,” *GitHub*. [Online]. Available: <https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet>. [Accessed: 05-Feb-2022].
+[1] Arduino. „ESP-NOW“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://docs.espressif.com/projects/arduino-esp32/en/latest/api/espnow.html
 
-[2] GitHub Docs, *Basic writing and formatting syntax - GitHub Docs*. [Online]. Available: <https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax>. [Accessed: 05-Feb-2022].
+[2] Espressif Systems. „ESP-NOW (Espressif Documentation)“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html
 
-[3] Markdowntutorial.com, *Markdown Tutorial*. [Online]. Available: <https://www.markdowntutorial.com/>. [Accessed: 05-Feb-2022].
+[3] S. Santos, „ESP32 with DHT11/DHT22 Temperature and Humidity Sensor using Arduino IDE | Random Nerd Tutorials“. Zugegriffen: 18. Februar 2025. [Online]. Verfügbar unter: https://randomnerdtutorials.com/esp32-dht11-dht22-temperature-humidity-sensor-arduino-ide/
 
-[4] Markdownguide.org, *Markdown Guide*. [Online]. Available: <https://www.markdownguide.org/>. [Accessed: 05-Feb-2022].
+[4] „Arduino - DHT11 | Arduino Tutorial“, Arduino Getting Started. Zugegriffen: 18. Februar 2025. [Online]. Verfügbar unter: https://arduinogetstarted.com/tutorials/arduino-dht11
 
-[5] De.wikipedia.org, *Technische Dokumentation – Wikipedia*. [Online]. Available: <https://de.wikipedia.org/wiki/Technische_Dokumentation>. [Accessed: 05-Feb-2022].
+[5] Adafruit. „Adafruit BMP280 Library“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://github.com/adafruit/Adafruit_BMP280_Library
 
-[6] Ieeeauthorcenter.ieee.org, *IEEE Reference Guide*. [Online]. Available: <https://ieeeauthorcenter.ieee.org/wp-content/uploads/IEEE-Reference-Guide.pdf>. [Accessed: 05-Feb-2022].
+[6] Adafruit. „Adafruit SSD1306“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://github.com/adafruit/Adafruit_SSD1306
 
-[7] Pitt.libguides.com, *Citation Styles: IEEE Style*. [Online]. Available: <https://pitt.libguides.com/citationhelp/ieee>. [Accessed: 05-Feb-2022].
+[7] Adafruit. „Adafruit GFX Library“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://github.com/adafruit/Adafruit-GFX-Library
 
-[8] Cite This For Me, *Save Time and Improve your Marks with CiteThisForMe*. [Online]. Available: <https://www.citethisforme.com/>. [Accessed: 05-Feb-2022].
+[8] „ESP32 - OLED“, ESP32 Tutorial. Zugegriffen: 18. Februar 2025. [Online]. Verfügbar unter: https://esp32io.com/tutorials/esp32-oled
