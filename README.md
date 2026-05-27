@@ -37,13 +37,17 @@ TMB12A05 (Buzzer)
 DST-015 (Bildschirm)
 
 
-BMP280:
-Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
 
-### Bauteile (Kurzbeschreibung)
+
+### Bauteile 
 
 ## RGB‑LED
 Eine RGB‑LED vereint **rote, grüne und blaue Leuchtdioden** in einem Gehäuse. Durch PWM‑Ansteuerung der drei Kanäle lassen sich **beliebige Farben** erzeugen.
+
+---
+
+##BMP280:
+Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
 
 ---
 
@@ -53,7 +57,7 @@ Der HC‑SR04 misst **Abstände von ca. 2–400 cm** mittels Ultraschall‑Ech
 ---
 
 ## Relaismodul
-Ein Relaismodul ermöglicht das **Schalten von Lasten** über eine **galvanisch getrennte Steuerseite**. Es wird genutzt, um höhere Spannungen oder Ströme sicher mit Mikrocontrollern zu schalten.
+Ein Relaismodul ermöglicht das **Schalten von Lasten** über eine **galvanisch getrennte Steuerseite**. Es wird genutzt, um höhere Spannungen oder Ströme sicher zu schalten, hier wird es aber wegen des "klickens" verwendet.
 
 ---
 
@@ -68,7 +72,17 @@ Der ESP32 ist ein **leistungsstarker Mikrocontroller** mit **WLAN/Bluetooth**, D
 ---
 
 ## DST‑015 (Display)
-Das DST‑015 ist ein **1,5‑Zoll‑TFT‑Display** mit **128×128 Pixeln**, das über SPI angesteuert wird. Es eignet sich zur Darstellung von Text, Icons und einfachen 
+Das DST‑015 ist ein **1,5‑Zoll‑TFT‑Display** mit **128×128 Pixeln**, das über SPI angesteuert wird. Es eignet sich zur Darstellung von Text, Icons und einfachen Ausgaben.
+
+---
+
+## DHT11 (Temperatur- und Feuchtigkeitssensor)
+Der DHT11 misst **Temperatur (0–50 °C)** und **relative Luftfeuchtigkeit (20–90 %)**. Er liefert digitale Messwerte und eignet sich für einfache Umgebungsüberwachungen.
+
+---
+
+## Haljia Lichtsensor (Fotowiderstand / LDR-Modul)
+Der Haljia‑Lichtsensor nutzt einen **Fotowiderstand (LDR)**, dessen Widerstand sich je nach Umgebungshelligkeit ändert. Er ermöglicht eine einfache **Helligkeitsmessung** über einen analogen Eingang.
 
 ## 4. Arbeitsschritte (Anleitung zur Durchführung)
 
@@ -90,7 +104,9 @@ Im Folgenden werden die Arbeitsschritte beschrieben, um das Projekt (IoT‑Wette
 - OLED SSD1306 (I2C, 128×64)
 - 3× LEDs (oder RGB-LED-Kanäle) an GPIO 16/17/18 (Empfänger)
 - Relaismodul an GPIO 23 (Empfänger)
-- Jumper-Kabel, Breadboard, ggf. Widerstände (für LEDs)
+- Jumper-Kabel, Breadboard, ggf. Widerstände und weiteres
+- DHT11 (Luftfeuchtigkeits- und Temoerratur- Sensor)
+- Button
 
 **Software / Libraries (Arduino IDE):**
 - ESP32 Board Support (Arduino IDE Boardverwalter)
@@ -146,6 +162,15 @@ Im Code gilt: **LOW = dunkel**, daher:
 - Signal → **GPIO 27**
 - GND → GND
 
+### (E) Button
+- Eingang → **GPIO 25**
+- GND → GND
+
+### (F) DHT11
+- Data → **GPIO 32**
+- VCC → 3.3V/5V (je nach Modul)
+- GND → GND
+
 ---
 
 ### 4.4 Inbetriebnahme – Sender testen
@@ -157,6 +182,7 @@ Im Code gilt: **LOW = dunkel**, daher:
    - Druck (hPa)
    - Distanz (cm) – bei Timeout `-1.0`
    - Tag/Nacht
+   - Luftfeuchtigkeit
 
 **Fehlersuche:**
 - Ausgabe „BMP280 nicht gefunden!“ → I2C-Verdrahtung prüfen, Adresse 0x76/0x77 testen.
@@ -258,24 +284,1247 @@ Auf dem OLED werden angezeigt:
 
 ### Code
 
-Sehr wichtig ist es, den verwendeten Code zu dokumentieren.
+## Mess-ESP-Code
 
 ```c++
-unsigned long myTime;
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP280.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <DHT.h>
 
-void setup() {
-  Serial.begin(9600);
+// =====================================================
+// ================== BMP280 (Temp/Druck) ==============
+TwoWire I2C_BMP = TwoWire(1);
+Adafruit_BMP280 bmp(&I2C_BMP);
+
+// =====================================================
+// ================== DHT11 (Temp/Feuchte) =============
+#define DHT_PIN 32
+#define DHT_TYPE DHT11
+DHT dht(DHT_PIN, DHT_TYPE);
+
+// =====================================================
+// ================== HY-SRF05 (Distanz) ===============
+#define TRIG_PIN 5
+#define ECHO_PIN 18
+
+// =====================================================
+// ================== LICHTSENSOR (HALJIA, DO) =========
+#define LICHTSENSOR_PIN 26
+const bool DO_HIGH_MEANS_DARK = true; // ggf. false
+const int lichtSamples = 6;           // für Mehrheitsentscheidung pro Sekunde (klein halten)
+const int lichtDelayMs = 2;
+const float nightThreshold = 0.5f;    // >= 50% dunkel => Nacht
+
+// =====================================================
+// ================== BUZZER ===========================
+#define BUZZER_PIN 27
+bool send_ok = true;
+unsigned long lastBeep = 0;
+const unsigned long beepInterval = 333; // 3x/s
+
+// =====================================================
+// ================== BUTTON (SYSTEM SLEEP TOGGLE) =====
+#define BUTTON_PIN 25
+bool systemSleep = false;
+
+// Entprellung Button
+bool lastButtonReading = HIGH;
+bool stableButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceMs = 40;
+
+// =====================================================
+// ================== ESP-NOW ==========================
+uint8_t broadcastAddress[] = {0x00, 0x70, 0x07, 0x26, 0xAA, 0x48};
+
+typedef struct struct_message {
+  float tempAvg;      // Durchschnitt aus BMP280 + DHT11 (für den 6er-Block)
+  float pres;         // Druck-Ø (6er-Block)
+  float dist;         // Distanz-Ø (6er-Block)
+  bool istNacht;      // Mehrheit (6er-Block)
+  bool systemSleep;   // globaler Sleep Toggle
+  float humidity;     // Feuchte-Ø (6er-Block)
+  float tempBmp;      // BMP Temp-Ø (6er-Block)
+  float tempDht;      // DHT Temp-Ø (6er-Block)
+} struct_message;
+
+struct_message sensorData;
+esp_now_peer_info_t peerInfo;
+
+// =====================================================
+// ================== CALLBACK =========================
+void OnDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
+  send_ok = (status == ESP_NOW_SEND_SUCCESS);
 }
 
+// =====================================================
+// ================== ZEITSTEUERUNG / SAMPLING =========
+const unsigned long sampleIntervalMs = 1000; // 1 Sekunde
+unsigned long lastSampleMillis = 0;
+
+const int samplesPerBatch = 6; // 6 Messungen (1x pro Sekunde)
+int sampleCount = 0;
+
+// Akkus für Batch-Mittelwerte
+float sumBmpTemp = 0;
+float sumDhtTemp = 0;
+float sumPres = 0;
+float sumHum = 0;
+float sumDist = 0;
+int   countDistValid = 0;
+
+int nightCount = 0;     // Anzahl "Nacht" in der Batch
+int nightValid = 0;     // Anzahl gültiger Lichtmessungen (eigentlich = samplesPerBatch)
+
+// DHT: letzte gültige Werte (DHT11 liefert manchmal NaN)
+float lastGoodHum = 0;
+float lastGoodTempDht = 0;
+
+// =====================================================
+// ================== HILFSFUNKTIONEN ==================
+void handleButtonToggle() {
+  bool reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonReading) {
+    lastDebounceTime = millis();
+    lastButtonReading = reading;
+  }
+
+  if ((millis() - lastDebounceTime) > debounceMs) {
+    if (reading != stableButtonState) {
+      stableButtonState = reading;
+      if (stableButtonState == LOW) {
+        systemSleep = !systemSleep;
+        Serial.print("SYSTEM SLEEP TOGGLE: ");
+        Serial.println(systemSleep ? "AN" : "AUS");
+        digitalWrite(BUZZER_PIN, HIGH); delay(60); digitalWrite(BUZZER_PIN, LOW);
+      }
+    }
+  }
+}
+
+bool leseIstNachtSchnell() {
+  // kurze Mehrheitsentscheidung über wenige schnelle Reads
+  int darkCount = 0;
+  for (int i = 0; i < lichtSamples; i++) {
+    int raw = digitalRead(LICHTSENSOR_PIN);
+    bool isDark = DO_HIGH_MEANS_DARK ? (raw == HIGH) : (raw == LOW);
+    if (isDark) darkCount++;
+    delay(lichtDelayMs);
+  }
+  return ((float)darkCount / (float)lichtSamples) >= nightThreshold;
+}
+
+float leseDistanzCm() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long dauer = pulseIn(ECHO_PIN, HIGH, 30000);
+  if (dauer <= 0) return -1.0f;
+  return (dauer * 0.0343f / 2.0f);
+}
+
+void resetBatch() {
+  sampleCount = 0;
+
+  sumBmpTemp = 0;
+  sumDhtTemp = 0;
+  sumPres = 0;
+  sumHum = 0;
+  sumDist = 0;
+  countDistValid = 0;
+
+  nightCount = 0;
+  nightValid = 0;
+}
+
+void sendPacket(float tempAvg, float presAvg, float distAvg, bool istNachtBatch, float humAvg, float bmpAvg, float dhtAvg) {
+  sensorData.tempAvg = tempAvg;
+  sensorData.pres = presAvg;
+  sensorData.dist = distAvg;
+  sensorData.istNacht = istNachtBatch;
+  sensorData.systemSleep = systemSleep;
+  sensorData.humidity = humAvg;
+  sensorData.tempBmp = bmpAvg;
+  sensorData.tempDht = dhtAvg;
+
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&sensorData, sizeof(sensorData));
+  if (result != ESP_OK) {
+    Serial.println("Senden fehlgeschlagen (esp_now_send Fehler)!");
+  }
+}
+
+// =====================================================
+// ================== SETUP ============================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(LICHTSENSOR_PIN, INPUT_PULLUP);
+
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  dht.begin();
+
+  I2C_BMP.begin(21, 22);
+  if (!bmp.begin(0x76)) {
+    Serial.println("BMP280 nicht gefunden!");
+    while (1) {}
+  }
+
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW Init fehlgeschlagen.");
+    return;
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Peer hinzufügen fehlgeschlagen.");
+    return;
+  }
+
+  resetBatch();
+  lastSampleMillis = millis();
+
+  Serial.println("Sender gestartet: 6x Messen (1/s) -> Mittelwerte senden.");
+}
+
+// =====================================================
+// ================== LOOP =============================
 void loop() {
-  Serial.print("Time: ");
-  myTime = millis();
-  Serial.println(myTime); // Gibt die Zeit seit dem Programmstart aus
-  delay(1000);            // Eine Sekunde warten, um keine riesigen Datenmengen zu senden
+  unsigned long now = millis();
+
+  // Button immer prüfen
+  handleButtonToggle();
+
+  // Buzzer bei "kein Empfänger" nur wenn systemSleep AUS
+  if (!systemSleep) {
+    if (!send_ok) {
+      if (now - lastBeep >= beepInterval) {
+        lastBeep = now;
+        digitalWrite(BUZZER_PIN, HIGH);
+        delay(80);
+        digitalWrite(BUZZER_PIN, LOW);
+      }
+    } else {
+      digitalWrite(BUZZER_PIN, LOW);
+    }
+  } else {
+    digitalWrite(BUZZER_PIN, LOW);
+  }
+
+  // Sampling jede Sekunde
+  if (now - lastSampleMillis < sampleIntervalMs) return;
+  lastSampleMillis += sampleIntervalMs;
+
+  // Wenn systemSleep AN: nur Statuspakete senden, aber weiterhin jede Sekunde
+  // zählen, damit der Empfänger schnell umschalten kann.
+  if (systemSleep) {
+    sampleCount++;
+    if (sampleCount >= samplesPerBatch) {
+      // Statuspaket ohne Messwerte
+      Serial.println("SystemSleep AN -> sende Statuspaket (Batch).");
+      sendPacket(0, 0, -1, false, 0, 0, 0);
+      resetBatch();
+    }
+    return;
+  }
+
+  // ======= 1 Messung pro Sekunde =======
+  float bmpTemp = bmp.readTemperature();
+  float pres = bmp.readPressure() / 100.0f;
+
+  float dhtTemp = dht.readTemperature();
+  float hum = dht.readHumidity();
+
+  if (!isnan(dhtTemp)) lastGoodTempDht = dhtTemp;
+  if (!isnan(hum)) lastGoodHum = hum;
+  dhtTemp = lastGoodTempDht;
+  hum = lastGoodHum;
+
+  float dist = leseDistanzCm();
+  bool nacht = leseIstNachtSchnell();
+
+  // Akkumulieren
+  sumBmpTemp += bmpTemp;
+  sumDhtTemp += dhtTemp;
+  sumPres += pres;
+  sumHum += hum;
+
+  if (dist > 0) {
+    sumDist += dist;
+    countDistValid++;
+  }
+
+  if (nacht) nightCount++;
+  nightValid++;
+
+  sampleCount++;
+
+  Serial.print("Sample "); Serial.print(sampleCount);
+  Serial.print("/"); Serial.print(samplesPerBatch);
+  Serial.print(" | BMP="); Serial.print(bmpTemp, 1);
+  Serial.print(" DHT="); Serial.print(dhtTemp, 1);
+  Serial.print(" H="); Serial.print(hum, 0);
+  Serial.print(" P="); Serial.print(pres, 0);
+  Serial.print(" D="); Serial.print(dist, 1);
+  Serial.print(" | "); Serial.println(nacht ? "NACHT" : "TAG");
+
+  // ======= nach 6 Messungen: Mittelwerte bilden & senden =======
+  if (sampleCount >= samplesPerBatch) {
+    float bmpAvg = sumBmpTemp / samplesPerBatch;
+    float dhtAvg = sumDhtTemp / samplesPerBatch;
+    float presAvg = sumPres / samplesPerBatch;
+    float humAvg = sumHum / samplesPerBatch;
+
+    float distAvg = (countDistValid > 0) ? (sumDist / countDistValid) : -1.0f;
+
+    // Durchschnitt aus beiden Temperatur-Sensoren
+    float tempAvg = (bmpAvg + dhtAvg) / 2.0f;
+
+    // Mehrheit Tag/Nacht
+    bool istNachtBatch = (nightCount >= (nightValid / 2 + 1)); // Mehrheit
+
+    Serial.println("===== BATCH SEND =====");
+    Serial.print("BMP Avg:   "); Serial.println(bmpAvg, 1);
+    Serial.print("DHT Avg:   "); Serial.println(dhtAvg, 1);
+    Serial.print("Temp Avg:  "); Serial.println(tempAvg, 1);
+    Serial.print("Hum Avg:   "); Serial.println(humAvg, 0);
+    Serial.print("Pres Avg:  "); Serial.println(presAvg, 0);
+    Serial.print("Dist Avg:  "); Serial.println(distAvg, 1);
+    Serial.print("Light:     "); Serial.println(istNachtBatch ? "NACHT" : "TAG");
+    Serial.println("=======================");
+
+    sendPacket(tempAvg, presAvg, distAvg, istNachtBatch, humAvg, bmpAvg, dhtAvg);
+
+    resetBatch();
+  }
 }
 ```
 
-Dieser Code muss natürlich auch beschrieben und kommentiert werden.
+
+### Der Anzeige ESP
+
+```c++
+#include <WiFi.h>
+#include <esp_now.h>
+#include <WebServer.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Arduino_JSON.h>
+
+// ================== DISPLAY ==================
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+TwoWire I2C_Display = TwoWire(0);
+
+Adafruit_SSD1306 display(
+  SCREEN_WIDTH,
+  SCREEN_HEIGHT,
+  &I2C_Display,
+  -1
+);
+
+#define RELAY_PIN 23
+
+// ================== GRAPH DATEN ==================
+const int anzahlDatenpunkte = 10;
+
+float temperaturHistorie[anzahlDatenpunkte];
+float druckHistorie[anzahlDatenpunkte];
+float feuchteHistorie[anzahlDatenpunkte];
+
+int datenIndex = 0;
+bool pufferVoll = false;
+
+// ================== STATUS ==================
+bool ledAutomatik = true;
+bool relaisSystemAktiv = true;
+
+bool nightStatus = false;
+
+// ================== ESP NOW ==================
+typedef struct {
+
+  float temp;
+  float pres;
+  float dist;
+  float hum;
+
+  bool istNacht;
+
+} struct_message;
+
+struct_message incomingData;
+
+// ================== LIVE DATEN ==================
+float webTemperatur = 0;
+float webDruck = 0;
+float webDistanz = 0;
+float webFeuchte = 0;
+
+// ================== WLAN ==================
+const char* ap_ssid = "ESP32_Anzeige";
+const char* ap_password = "12345678";
+
+WebServer server(80);
+
+// ================== HTML ==================
+const char index_html[] PROGMEM = R"rawliteral(
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>ESP32 Steuerung</title>
+
+<style>
+
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-bottom: 20px;
+  width: 80%;
+  max-width: 800px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-box {
+  border: 2px solid #444;
+  padding: 10px;
+  margin-top: 15px;
+  border-radius: 6px;
+}
+
+canvas {
+  width: 100%;
+  height: 220px;
+  background: #fff;
+}
+
+h1, h2 {
+  color: #333;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+button.ein {
+  background-color: #28a745;
+}
+
+button.aus {
+  background-color: #dc3545;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>ESP32 Messwerte & Steuerung</h1>
+
+<div class="container">
+
+  <h2>Live-Daten</h2>
+
+  <p>
+    Temperatur:
+    <span id="temp">--</span>
+    &deg;C
+  </p>
+
+  <p>
+    Feuchtigkeit:
+    <span id="hum">--</span>
+    %
+  </p>
+
+  <p>
+    Druck:
+    <span id="pres">--</span>
+    hPa
+  </p>
+
+  <p>
+    Distanz:
+    <span id="dist">--</span>
+    cm
+  </p>
+
+  <p>
+    Helligkeit:
+    <span id="light">--</span>
+  </p>
+
+</div>
+
+<div class="container">
+
+  <h2>Daten der letzten 1 Minute</h2>
+
+  <div class="chart-box">
+
+    <p><b>Temperatur</b></p>
+
+    <canvas
+      id="tempChart"
+      width="600"
+      height="220">
+    </canvas>
+
+  </div>
+
+  <div class="chart-box">
+
+    <p><b>Luftdruck</b></p>
+
+    <canvas
+      id="presChart"
+      width="600"
+      height="220">
+    </canvas>
+
+  </div>
+
+  <div class="chart-box">
+
+    <p><b>Luftfeuchtigkeit</b></p>
+
+    <canvas
+      id="humChart"
+      width="600"
+      height="220">
+    </canvas>
+
+  </div>
+
+</div>
+
+<div class="container">
+
+  <h2>LED Steuerung</h2>
+
+  <p>
+    Status:
+    <span id="ledStatus">--</span>
+  </p>
+
+  <form
+    action="/ledAuto"
+    method="POST"
+    style="display:inline-block;">
+
+    <button
+      type="submit"
+      class="ein">
+
+      Automatik EIN
+
+    </button>
+
+  </form>
+
+  <form
+    action="/ledAus"
+    method="POST"
+    style="display:inline-block;">
+
+    <button
+      type="submit"
+      class="aus">
+
+      Alle LEDs AUS
+
+    </button>
+
+  </form>
+
+</div>
+
+<div class="container">
+
+  <h2>Relais Steuerung</h2>
+
+  <p>
+    Status:
+    <span id="relaisStatus">--</span>
+  </p>
+
+  <form
+    action="/relaisEin"
+    method="POST"
+    style="display:inline-block;">
+
+    <button
+      type="submit"
+      class="ein">
+
+      Relais-System EIN
+
+    </button>
+
+  </form>
+
+  <form
+    action="/relaisAus"
+    method="POST"
+    style="display:inline-block;">
+
+    <button
+      type="submit"
+      class="aus">
+
+      Relais-System AUS
+
+    </button>
+
+  </form>
+
+</div>
+
+<script>
+
+function drawGraph(
+  canvasId,
+  values,
+  color,
+  yLabel,
+  unit,
+  yMin,
+  yMax
+) {
+
+  const canvas =
+    document.getElementById(canvasId);
+
+  const ctx =
+    canvas.getContext("2d");
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  if(values.length === 0) return;
+
+  const w = canvas.width;
+  const h = canvas.height;
+
+  const pad = 45;
+
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  ctx.moveTo(pad, 10);
+  ctx.lineTo(pad, h - pad);
+  ctx.lineTo(w - 10, h - pad);
+
+  ctx.stroke();
+
+  ctx.fillStyle = "#000";
+  ctx.font = "12px Arial";
+
+  ctx.fillText(
+    "Zeit",
+    w/2 - 20,
+    h - 10
+  );
+
+  ctx.fillText(
+    yLabel,
+    5,
+    12
+  );
+
+  for(let t=0; t<=60; t+=6){
+
+    const x =
+      pad +
+      (t/60)*(w-2*pad);
+
+    ctx.beginPath();
+
+    ctx.moveTo(x, h - pad);
+    ctx.lineTo(x, h - pad + 5);
+
+    ctx.stroke();
+
+    const label =
+      (t===60)
+      ? t + unit.x
+      : t;
+
+    ctx.fillText(
+      label.toString(),
+      x-6,
+      h - pad + 18
+    );
+  }
+
+  const ySteps = 5;
+
+  for(let i=0; i<=ySteps; i++){
+
+    const val =
+      yMin +
+      (
+        i*(yMax-yMin)/ySteps
+      );
+
+    const y =
+      h - pad -
+      (
+        i/ySteps
+      ) *
+      (h-2*pad);
+
+    ctx.beginPath();
+
+    ctx.moveTo(pad-5, y);
+    ctx.lineTo(pad, y);
+
+    ctx.stroke();
+
+    const label =
+      (i===ySteps)
+      ? val.toFixed(1) + unit.y
+      : val.toFixed(1);
+
+    ctx.fillText(
+      label,
+      5,
+      y+4
+    );
+  }
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  values.forEach((v,i)=>{
+
+    const time = i*6;
+
+    const x =
+      pad +
+      (time/60)*(w-2*pad);
+
+    const y =
+      h - pad -
+      (
+        (v-yMin)/(yMax-yMin)
+      ) *
+      (h-2*pad);
+
+    if(i===0) {
+      ctx.moveTo(x,y);
+    }
+    else {
+      ctx.lineTo(x,y);
+    }
+  });
+
+  ctx.stroke();
+}
+
+async function fetchData(){
+  try{
+    const response = await fetch('/chart-data');
+    const data = await response.json();
+
+    document.getElementById('temp').innerText = data.live.temp.toFixed(1);
+    document.getElementById('hum').innerText  = data.live.hum.toFixed(0);
+    document.getElementById('pres').innerText = data.live.pres.toFixed(0);
+    document.getElementById('dist').innerText = data.live.dist.toFixed(1);
+    document.getElementById('ledStatus').innerText = data.status.ledAutomatik ? "Automatisch" : "Manuell Aus";
+    document.getElementById('relaisStatus').innerText = data.status.relaisSystemAktiv ? "System AKTIV" : "System AUS";
+    document.getElementById('light').innerText = data.status.night ? 'NACHT' : 'TAG';
+
+    // ---- Diagramme zeichnen:
+    drawGraph(
+      "tempChart",
+      data.history.temp,
+      "#ff6384",
+      "Temperatur",
+      {x:"s", y:"°C"},
+      10, 35
+    );
+    drawGraph(
+      "presChart",
+      data.history.pres,
+      "#36a2eb",
+      "Luftdruck",
+      {x:"s", y:"hPa"},
+      950, 1050
+    );
+    drawGraph(
+      "humChart",
+      data.history.hum,
+      "#4bc0c0",
+      "Feuchtigkeit",
+      {x:"s", y:"%"},
+      0, 100
+    );
+  } catch(e){
+    console.error(e);
+  }
+}
+
+setInterval(fetchData, 6000);
+
+window.onload = fetchData;
+
+</script>
+
+</body>
+</html>
+
+)rawliteral";
+
+// ================== RECEIVE CALLBACK ==================
+void OnDataRecv(
+  const esp_now_recv_info_t *info,
+  const uint8_t *incomingDataBytes,
+  int len
+) {
+
+  if (len != sizeof(struct_message)) return;
+
+  memcpy(
+    &incomingData,
+    incomingDataBytes,
+    sizeof(incomingData)
+  );
+
+  webTemperatur = incomingData.temp;
+  webDruck      = incomingData.pres;
+  webDistanz    = incomingData.dist;
+  webFeuchte    = incomingData.hum;
+
+  nightStatus   = incomingData.istNacht;
+
+  temperaturHistorie[datenIndex] =
+    webTemperatur;
+
+  druckHistorie[datenIndex] =
+    webDruck;
+
+  feuchteHistorie[datenIndex] =
+    webFeuchte;
+
+  datenIndex =
+    (datenIndex + 1)
+    % anzahlDatenpunkte;
+
+  if (!pufferVoll && datenIndex == 0) {
+    pufferVoll = true;
+  }
+}
+
+// ================== JSON ==================
+String erstelleChartDatenAlsJson() {
+
+  int count =
+    pufferVoll
+    ? anzahlDatenpunkte
+    : datenIndex;
+
+  String json = "{";
+
+  json += "\"history\":{";
+
+  // TEMP
+  json += "\"temp\":[";
+
+  for (int i = 0; i < count; i++) {
+
+    int ringIndex =
+      (datenIndex - count + i + anzahlDatenpunkte)
+      % anzahlDatenpunkte;
+
+    json +=
+      String(
+        temperaturHistorie[ringIndex],
+        2
+      );
+
+    if (i < count - 1) {
+      json += ",";
+    }
+  }
+
+  json += "],";
+
+  // DRUCK
+  json += "\"pres\":[";
+
+  for (int i = 0; i < count; i++) {
+
+    int ringIndex =
+      (datenIndex - count + i + anzahlDatenpunkte)
+      % anzahlDatenpunkte;
+
+    json +=
+      String(
+        druckHistorie[ringIndex],
+        2
+      );
+
+    if (i < count - 1) {
+      json += ",";
+    }
+  }
+
+  json += "],";
+
+  // FEUCHTE
+  json += "\"hum\":[";
+
+  for (int i = 0; i < count; i++) {
+
+    int ringIndex =
+      (datenIndex - count + i + anzahlDatenpunkte)
+      % anzahlDatenpunkte;
+
+    json +=
+      String(
+        feuchteHistorie[ringIndex],
+        2
+      );
+
+    if (i < count - 1) {
+      json += ",";
+    }
+  }
+
+  json += "]";
+
+  json += "},";
+
+  // LIVE
+  json += "\"live\":{";
+
+  json += "\"temp\":";
+  json += String(webTemperatur, 2);
+  json += ",";
+
+  json += "\"hum\":";
+  json += String(webFeuchte, 2);
+  json += ",";
+
+  json += "\"pres\":";
+  json += String(webDruck, 2);
+  json += ",";
+
+  json += "\"dist\":";
+  json += String(webDistanz, 2);
+
+  json += "},";
+
+  // STATUS
+  json += "\"status\":{";
+
+  json += "\"ledAutomatik\":";
+  json += String(
+    ledAutomatik
+    ? "true"
+    : "false"
+  );
+
+  json += ",";
+
+  json += "\"relaisSystemAktiv\":";
+  json += String(
+    relaisSystemAktiv
+    ? "true"
+    : "false"
+  );
+
+  json += ",";
+
+  json += "\"night\":";
+  json += String(
+    nightStatus
+    ? "true"
+    : "false"
+  );
+
+  json += "}";
+
+  json += "}";
+
+  return json;
+}
+
+// ================== SETUP ==================
+void setup() {
+
+  Serial.begin(115200);
+
+  for (int i=0; i<anzahlDatenpunkte; i++) {
+
+    temperaturHistorie[i] = 0;
+    druckHistorie[i] = 0;
+    feuchteHistorie[i] = 0;
+  }
+
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
+  pinMode(18, OUTPUT);
+
+  pinMode(RELAY_PIN, OUTPUT);
+
+  I2C_Display.begin(33,19);
+
+  if(!display.begin(
+      SSD1306_SWITCHCAPVCC,
+      0x3C
+    )) {
+
+    while(true);
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+
+  WiFi.mode(WIFI_AP_STA);
+
+  WiFi.softAP(
+    ap_ssid,
+    ap_password
+  );
+
+  esp_now_init();
+
+  esp_now_register_recv_cb(
+    OnDataRecv
+  );
+
+  server.on("/", HTTP_GET, []() {
+
+    server.send(
+      200,
+      "text/html",
+      index_html
+    );
+  });
+
+  server.on("/chart-data", HTTP_GET, []() {
+
+    server.send(
+      200,
+      "application/json",
+      erstelleChartDatenAlsJson()
+    );
+  });
+
+  server.on("/relaisEin", HTTP_POST, []() {
+
+    relaisSystemAktiv = true;
+
+    server.sendHeader("Location", "/");
+    server.send(302);
+  });
+
+  server.on("/relaisAus", HTTP_POST, []() {
+
+    relaisSystemAktiv = false;
+
+    server.sendHeader("Location", "/");
+    server.send(302);
+  });
+
+  server.on("/ledAuto", HTTP_POST, []() {
+
+    ledAutomatik = true;
+
+    server.sendHeader("Location", "/");
+    server.send(302);
+  });
+
+  server.on("/ledAus", HTTP_POST, []() {
+
+    ledAutomatik = false;
+
+    server.sendHeader("Location", "/");
+    server.send(302);
+  });
+
+  server.begin();
+}
+
+// ================== LOOP ==================
+void loop() {
+
+  server.handleClient();
+
+  display.clearDisplay();
+
+  display.setCursor(0,0);
+
+  display.print("Temp: ");
+  display.print(webTemperatur, 1);
+  display.println(" C");
+
+  display.print("Feuchte: ");
+  display.print(webFeuchte, 0);
+  display.println(" %");
+
+  display.print("Druck: ");
+  display.print(webDruck, 0);
+  display.println(" hPa");
+
+  display.print("Dist: ");
+  display.print(webDistanz, 1);
+  display.println(" cm");
+
+  display.print("Licht: ");
+
+  display.println(
+    nightStatus
+    ? "NACHT"
+    : "TAG"
+  );
+
+  display.print("-------------------\n");
+
+  display.print("LEDs: ");
+
+  display.println(
+    ledAutomatik
+    ? "AUTO"
+    : "AUS"
+  );
+
+  display.print("Relais: ");
+
+  display.println(
+    relaisSystemAktiv
+    ? "AKTIV"
+    : "AUS"
+  );
+
+  display.display();
+
+  Serial.println(
+    nightStatus
+    ? "Lichtstatus: NACHT"
+    : "Lichtstatus: TAG"
+  );
+
+  // LED SYSTEM
+  if (ledAutomatik) {
+
+    if (webTemperatur > 25) {
+
+      digitalWrite(16, HIGH);
+      digitalWrite(17, LOW);
+      digitalWrite(18, LOW);
+    }
+
+    else if (webTemperatur < 15) {
+
+      digitalWrite(17, HIGH);
+      digitalWrite(16, LOW);
+      digitalWrite(18, LOW);
+    }
+
+    else {
+
+      digitalWrite(18, HIGH);
+      digitalWrite(16, LOW);
+      digitalWrite(17, LOW);
+    }
+  }
+
+  else {
+
+    digitalWrite(16, LOW);
+    digitalWrite(17, LOW);
+    digitalWrite(18, LOW);
+  }
+
+  // RELAIS
+  if (relaisSystemAktiv) {
+
+    bool objektNahe =
+      (
+        webDistanz > 0
+        &&
+        webDistanz < 50
+      );
+
+    if (objektNahe) {
+
+      digitalWrite(RELAY_PIN, HIGH);
+      delay(200);
+
+      digitalWrite(RELAY_PIN, LOW);
+      delay(200);
+    }
+
+    else {
+
+      digitalWrite(RELAY_PIN, HIGH);
+      delay(1000);
+
+      digitalWrite(RELAY_PIN, LOW);
+      delay(1000);
+    }
+  }
+
+  else {
+
+    digitalWrite(RELAY_PIN, LOW);
+    delay(500);
+  }
+}
+```
+
+
+
 
 ### Bilder und Schaltungen
 
