@@ -1147,31 +1147,29 @@ void loop() {
 
 ### Tabellen
 
-| Variable                             | n     | M     | SD   | 1      | 2      | 3     | 4     | 5    | 6     | 7    |
-| ------------------------------------ | ----- | ----- | ---- | ------ | ------ | ----- | ----- | ---- | ----- | ---- |
-| 1. Ultraschallsensor       | 3,697 | 0.43  | 0.49 | —      |        |       |       |      |       |      |
-| 2. OLED-Display           | 2,134 | 3.14  | 0.62 | −.08** | —      |       |       |      |       |      |
-| 3. RGB-LED                | 3,697 | 1.01  | 0.27 | .45**  | −.01   | —     |       |      |       |      |
-| 4. Grafik mit Access Point              | 3,697 | 0.33  | 0.47 | .08**  | .07**  | .04*  | —     |      |       |      |
-| 5. Buzzer            | 3,697 | 6.45  | 6.62 | −.29** | .09**  | .01   | .09** | —    |       |      |
-| 6. Relais       | 3,505 | 85.00 | 6.98 | −.25** | −.39** | .24** | .08** | .01  | —     |      |
-| 7. Unit financial performance c      | 694   | 42.61 | 5.86 | .00    | −.03   | .12*  | −.07  | −.02 | .16** | —    |
+| Komponente | Funktion |
+|---|---|
+| ESP32 (Sender / Sensor-Node) | Liest Sensordaten ein (BMP280: Temperatur/Luftdruck, DHT11: Temperatur/Luftfeuchte, HY‑SRF05: Distanz, Lichtsensor: Tag/Nacht), bildet Mittelwerte (6 Samples) und sendet sie per ESP‑NOW. |
+| ESP32 (Empfänger / Anzeige-Node) | Empfängt ESP‑NOW Daten, zeigt sie lokal am OLED an, erstellt einen Access Point mit Webserver/Webinterface und steuert LEDs + Relais abhängig von Modus und Messwerten. |
+| BMP280 (I2C) | Misst Temperatur und Luftdruck (wird im Sender gelesen und übertragen). |
+| DHT11 | Misst Temperatur und Luftfeuchtigkeit (Sender; Werte werden für Durchschnitt/Anzeige übertragen). |
+| HY‑SRF05 (Ultraschallsensor) | Misst Distanz per Echo-Laufzeit (Sender; Distanz wird übertragen und am Empfänger für Relais-Logik genutzt). |
+| Lichtsensor-Modul (Digitalausgang/DO) | Ermittelt Tag/Nacht (Sender; Status wird übertragen und im Webinterface/OLED als „TAG/NACHT“ angezeigt). |
+| Buzzer | Akustisches Signal am Sender bei ESP‑NOW Sendefehlern; zusätzlich kurzer Feedback-Beep beim Umschalten von „SystemSleep“ per Button. |
+| Button | Schaltet am Sender den „SystemSleep“-Status um; dieser wird per ESP‑NOW übertragen und versetzt den Empfänger in Standby (Display aus, LEDs/Relais aus). |
+| OLED SSD1306 (I2C, 128×64) | Lokale Anzeige am Empfänger (Zeit seit erster Übertragung, Temperatur, Feuchte, Druck, Distanz, Lichtstatus). |
+| LEDs (GPIO 16/17/18 am Empfänger) | Temperatur-Ampel im Automatikmodus: >25 °C rot, <15 °C grün, sonst blau; bei „LED AUS“ sind alle aus. |
+| Relaismodul (GPIO 23 am Empfänger) | Schaltet im aktiven Relais-System abhängig von Distanz (unter 50 cm schnell, sonst langsam); kann über Webinterface ein/aus geschaltet werden. |
+| Weboberfläche (Access Point + WebServer) | Zeigt Live-Daten + Status, bietet Buttons für LED-Automatik/LED-Aus und Relais-System Ein/Aus, liefert JSON über `/chart-data` und zeichnet Diagramme (Temp/Druck/Feuchte) im Browser. |
+| Standby-/Timeout-Logik (Empfänger) | Geht in Standby bei Empfangs-Timeout (~15 s) oder wenn „SystemSleep“ vom Sender aktiv ist; wacht wieder auf, sobald frische Daten kommen und SystemSleep aus ist. |
 
-Auch die Aussage der Tabelle muss ausformuliert werden.
 
-### Text
-
-*"Eine **Technische Dokumentation** (auch Technikdokumentation oder Produktdokumentation) umfasst alle Informationsprodukte, die ein technisches Erzeugnis beschreiben und zu seiner Nutzung, Wartung oder Reparatur anleiten. Sie bereitet die Informationen systematisch auf und strukturiert sie so, dass der jeweilige Zweck vollständig erfüllt wird."* [5]
-
-Text aus anderen Quellen kann gerne verwendet werden, muss aber immer richtig zitiert werden, da das sonst als Plagiat gewertet wird. Die Aussage des zitierten Textausschnitts sollte auch immer zusätzlich besprochen werden.
 
 ## 5. Zusammenfassung
 
-Das Projekt soll hier in wenigen Sätzen zusammengefasst werden. Auch Schwierigkeiten und Fehler bei der Durchführung sind wichtig zu dokumentieren. Wenn es gröbere Probleme gab, sollten diese schon vorher (zum Beispiel in den Arbeitsschritten), kleinere in der Zusammenfassung beschrieben werden.
+In diesem Projekt wurde eine IoT-basierte Wetterstation mit zwei ESP32 realisiert. Der Sender erfasst Messwerte (Temperatur/Luftdruck über BMP280, Temperatur/Luftfeuchte über DHT11, Distanz über HY‑SRF05 sowie Tag/Nacht über einen Lichtsensor) und überträgt die gemittelten Daten in festen Intervallen per ESP‑NOW an den Empfänger.
 
-Im nächsten Abschnitt sind noch die Quellen anzugeben. Alles, was nicht vom Autor selbst erzeugt wurde, ist in einer Dokumentation zu zitieren und in den Quellen anzugeben. Es ist wichtig, immer festzuhalten, woher eine Information stammt, um diese gegebenenfalls nachprüfen zu können. Die meisten Informationen stammen in dieser Zeit aus dem Internet. Hier reicht es aber nicht nur, die URL anzugeben. Titel, Autor und vor allem das Datum, wann die URL das letzte Mal überprüft wurde, sind wichtig anzugeben (da sich Informationen im Internet auch ändern können).
-
-Es gibt viele Standards, richtig zu zitieren; in der Technik wird jedoch der [IEEE Standard](https://ieeeauthorcenter.ieee.org/wp-content/uploads/IEEE-Reference-Guide.pdf) [6] bevorzugt. Wie hier sichtbar ist, wird dazu im Text eine eckige Klammer gesetzt, welche zu den Quellen am Ende führt. Der IEEE Standard ist sehr ausführlich, hier gibt es ein paar [Beispiele](https://pitt.libguides.com/citationhelp/ieee) [7]. Wir können uns das Leben aber mit diesem [Citation Generator](https://www.citethisforme.com/) [8] leichter machen.
+Der Empfänger stellt die Werte lokal auf einem OLED dar und bietet zusätzlich eine Weboberfläche über einen eigenen Access Point. Über diese Oberfläche lassen sich die LED‑Automatik sowie das Relais-System steuern. Eine besondere Herausforderung war die zuverlässige Datenübertragung (korrekte MAC-Adresse/Strukturgröße) und die robuste Betriebslogik mit Standby bei fehlendem Empfang bzw. per „SystemSleep“-Umschaltung. Insgesamt zeigt das Projekt anschaulich, wie sich Sensorik, drahtlose Kommunikation und einfache Aktorik mit dem ESP32 zu einem funktionsfähigen IoT-System kombinieren lassen.
 
 ## 6. Quellen
 
