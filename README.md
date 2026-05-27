@@ -279,28 +279,18 @@ Dieser Code muss natürlich auch beschrieben und kommentiert werden.
 
 ### Bilder und Schaltungen
 
-<img src="https://i.pinimg.com/originals/22/99/fd/2299fd6a63810585136801a720768cde.jpg" alt="10 beste lustige Tierfotos für Freitag" style="zoom:33%;" />
-
-Bilder können URLs aus dem Internet enthalten oder auch lokale Pfade einbinden. Der Lesende muss aber Zugriff auf das Verzeichnis haben, sonst wird nichts angezeigt.
-
-![richtige Schaltung](data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...)
-
-Es können auch [Base64 Encodierte Bilder](https://www.base64-image.de/) verwendet werden. Dies hat den Vorteil, dass Bilder direkt in Markdown gespeichert werden.
-
-![schlechtes Beispiel](data:image/jpeg;base64,/9j/4AAQS.....)
-
-Bildausschnitte sollten mit Bedacht gewählt werden. Schaltungen sollten ansprechend gezeichnet und verständlich dargestellt werden. Leitungsfarben können angepasst werden. Die Aussage des Bildes sollte immer auch besprochen werden.
+<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/Schaltplan_Wetterstation.png" alt="10 beste lustige Tierfotos für Freitag" style="zoom:33%;" />
 
 ### Tabellen
 
 | Variable                             | n     | M     | SD   | 1      | 2      | 3     | 4     | 5    | 6     | 7    |
 | ------------------------------------ | ----- | ----- | ---- | ------ | ------ | ----- | ----- | ---- | ----- | ---- |
-| 1. Internal–external status a        | 3,697 | 0.43  | 0.49 | —      |        |       |       |      |       |      |
-| 2. Manager job performance           | 2,134 | 3.14  | 0.62 | −.08** | —      |       |       |      |       |      |
-| 3. Starting salary b                 | 3,697 | 1.01  | 0.27 | .45**  | −.01   | —     |       |      |       |      |
-| 4. Subsequent promotion              | 3,697 | 0.33  | 0.47 | .08**  | .07**  | .04*  | —     |      |       |      |
-| 5. Organizational tenure             | 3,697 | 6.45  | 6.62 | −.29** | .09**  | .01   | .09** | —    |       |      |
-| 6. Unit service performance c        | 3,505 | 85.00 | 6.98 | −.25** | −.39** | .24** | .08** | .01  | —     |      |
+| 1. Ultraschallsensor       | 3,697 | 0.43  | 0.49 | —      |        |       |       |      |       |      |
+| 2. OLED-Display           | 2,134 | 3.14  | 0.62 | −.08** | —      |       |       |      |       |      |
+| 3. RGB-LED                | 3,697 | 1.01  | 0.27 | .45**  | −.01   | —     |       |      |       |      |
+| 4. Grafik mit Access Point              | 3,697 | 0.33  | 0.47 | .08**  | .07**  | .04*  | —     |      |       |      |
+| 5. Buzzer            | 3,697 | 6.45  | 6.62 | −.29** | .09**  | .01   | .09** | —    |       |      |
+| 6. Relais       | 3,505 | 85.00 | 6.98 | −.25** | −.39** | .24** | .08** | .01  | —     |      |
 | 7. Unit financial performance c      | 694   | 42.61 | 5.86 | .00    | −.03   | .12*  | −.07  | −.02 | .16** | —    |
 
 Auch die Aussage der Tabelle muss ausformuliert werden.
