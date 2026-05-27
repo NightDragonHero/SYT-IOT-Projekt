@@ -1,4 +1,4 @@
-# ITP Projekt IoT und ESP-NOW
+# IoT und ESP-NOW
 
 ## Wetterstation
 
