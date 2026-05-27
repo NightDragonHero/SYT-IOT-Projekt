@@ -25,18 +25,7 @@ Das Internet der Dinge (IoT) beschreibt die Vernetzung von Geräten, die über S
 
 ESP-NOW ist ein Kommunikationsprotokoll, das von Espressif entwickelt wurde. Es ermöglicht die direkte drahtlose Kommunikation zwischen mehreren ESP-Geräten ohne die Notwendigkeit eines WLAN-Routers. Dadurch werden geringe Latenzzeiten und ein niedriger Energieverbrauch erreicht.
 
-Zur Abstandsmessung wird ein Ultraschallsensor verwendet. Dieser sendet Schallwellen aus und misst die Zeit, bis das Echo zurückkommt. Anhand dieser Zeit kann die Entfernung zum Objekt berechnet werden (in cm hier)
-
-Zusätzlich werden Ausgabekomponenten wie ein OLED-Display, eine RGB-LED sowie ein akustischer Signalgeber verwendet, um die gemessenen Daten für den Benutzer verständlich darzustellen
-
-RGB-LED 
-HC-SR04 (Ultraschallsensor)
-Relais B02
-TMB12A05 (Buzzer)
-2x ESP 32
-DST-015 (Bildschirm)
-
-
+Zur messung von Daten und ausgeben dieser in verschiedenen Formen sind folgende Bauteile zu benutzen:
 
 
 ### Bauteile 
@@ -46,7 +35,7 @@ Eine RGB‑LED vereint **rote, grüne und blaue Leuchtdioden** in einem Gehäuse
 
 ---
 
-##BMP280:
+## BMP280:
 Der Bosch BMP280 ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst.
 
 ---
