@@ -1177,3 +1177,7 @@ Der Empfänger stellt die Werte lokal auf einem OLED dar und bietet zusätzlich 
 [7] Adafruit. „Adafruit GFX Library“. Zugegriffen: 27. Mai 2026. [Online]. Verfügbar unter: https://github.com/adafruit/Adafruit-GFX-Library
 
 [8] „ESP32 - OLED“, ESP32 Tutorial. Zugegriffen: 18. Februar 2025. [Online]. Verfügbar unter: https://esp32io.com/tutorials/esp32-oled
+
+[9] „wokwi - World's most advanced ESP32 simulator“, Zugegriffen: 27. Mai 2025. [Online]. Verfügbar unter: [https://esp32io.com/tutorials/esp32-oled](https://wokwi.com/)
+
+
