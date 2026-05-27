@@ -1130,9 +1130,15 @@ void loop() {
 
 
 
-### Bilder und Schaltungen
+### Schaltungen
 
-<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/Schaltplan_Wetterstation.png" alt="10 beste lustige Tierfotos für Freitag" style="zoom:33%;" />
+<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/img/Schaltplan_Wetterstation.png" />
+
+### Website 
+
+<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/img/ESP_Website1.png" />
+<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/img/ESP_Website2.png" />
+<img src="https://github.com/NightDragonHero/SYT-IOT-Projekt/blob/main/img/ESP_Website3.png" />
 
 ### Tabellen
 
